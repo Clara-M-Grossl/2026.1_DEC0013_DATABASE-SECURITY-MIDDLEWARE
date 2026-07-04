@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  database:
+    image: postgres:16
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: clara
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: clinica_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  vault:
+    image: hashicorp/vault:latest
+    container_name: dev-vault
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "root"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+
+volumes:
+  postgres_data:
