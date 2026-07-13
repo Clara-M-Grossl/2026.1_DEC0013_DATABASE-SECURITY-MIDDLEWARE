@@ -43,20 +43,28 @@ O ambiente de demonstração foi construído para provar a eficácia do middlewa
 1. Portal de Acesso
 A porta de entrada do laboratório simula uma intranet corporativa que conecta a aplicação aos dois bancos de dados distintos.
 
-![Portal de Acesso](../docs/assets/1.png)
+<p align="center">
+  <img src="../docs/assets/1.png" alt="Access Portal" width="700">
+</p>
 
 2. Clínica
 
-![Cadastro na Clínica](../docs/assets/2.png) 
+<p align="center">
+  <img src="../docs/assets/2.png" alt="Clinic Registration" width="700">
+</p>
 
 3. Busca
 Ao buscar por um paciente, a interface exibe a prova real do funcionamento do Middleware: o CPF salvo no banco é um Ciphertext ilegível. Contudo, graças ao mecanismo de Blind Index, a busca parcial pelo nome funciona perfeitamente, filtrando os dados diretamente na memória do proxy.
 
-![Resultado da Busca](../docs/assets/3.png) 
+<p align="center">
+  <img src="../docs/assets/3.png" alt="Search Result" width="700">
+</p>
 
 
 4. Modo E-commerce
 
 A aplicação também demonstra a utilização do "Modo Shared" do Middleware voltado para E-commerces, protegendo cartões de crédito com chaves simétricas de alta performance e menor overhead de armazenamento.
 
-![E-commerce](../docs/assets/4.png) 
+<p align="center">
+  <img src="../docs/assets/4.png" alt="E-Commerce" width="700">
+</p>
