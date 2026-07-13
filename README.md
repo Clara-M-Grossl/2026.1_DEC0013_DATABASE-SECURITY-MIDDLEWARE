@@ -1,183 +1,208 @@
-# Database Security Middleware - UFSC
-
-<!-- Badges -->
-
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Semestre](https://img.shields.io/badge/semestre-2026.1-purple.svg)
-![Disciplina](https://img.shields.io/badge/disciplina-DEC0013-orange.svg)
-![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)
+![GIF](docs/assets/Database%20Security%20Middleweare.gif)
 
 <div align="center">
-  <h3>Database Security Middleware </h3>
-  <p>Sistema de Interceptação TCP e Criptografia em Rede para Bancos de Dados PostgreSQL.</p>
+  <h1>Database Security Middleware</h1>
+  <h2>TCP Interception and Network Encryption System for PostgreSQL Databases</h2>
+<div align="center">
+  <img src="https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Golang"/>
+  <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL"/>
+  <img src="https://img.shields.io/badge/Vault-000000?style=for-the-badge&logo=vault&logoColor=white" alt="HashiCorp Vault"/>
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"/>
 </div>
+<br>
 
-## Índice
+---
 
-- [Sobre o Projeto](#sobre-o-projeto)
-- [Funcionalidades](#funcionalidades)
-- [Tecnologias](#tecnologias)
-- [Instalação](#instalação)
-- [Uso](#uso)
-- [Arquitetura](#arquitetura-do-projeto)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Licença](#licença)
+<p>
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" />
+    <img src="https://img.shields.io/badge/semestre-2026.1-purple.svg" alt="Semester" />
+    <img src="https://img.shields.io/badge/disciplina-DEC0013-orange.svg" alt="Subject" />
+  </p>
 
-## Sobre o Projeto
+---
 
-Um proxy TCP desenvolvido com base no conceito de Zero Trust Storage. O middleware intercepta, em tempo real, a comunicação entre a aplicação e o banco de dados por meio do protocolo PgWire, analisa as consultas SQL e criptografa automaticamente os campos sensíveis. Dessa forma, a aplicação continua funcionando normalmente, sem necessidade de alterações no código fonte.
+[Versão em Português](READMEPT.md) 
 
-### Objetivos
+---
 
-- Criptografar e descriptografar dados sensíveis de maneira invisível para a aplicação cliente.
-- Permitir buscas em dados encriptados.
-- Centralizar o armazenamento e o gerenciamento das chaves criptográficas utilizando um KMS, como o HashiCorp Vault.
 
-## Funcionalidades
+## About the Project
 
-- Implementação de criptografia híbrida de envelope, utilizando AES-256-GCM para proteger os dados e RSA-2048 para criptografar a chave de dados (**Per-Row**)
-- Implementação de um modo configurável via variável de ambiente para usar chave estática visado eficiência máxima de espaço em diso (**Shared DEK**)
-- Descriptografia automática dos dados durante o retorno de consultas SELECT, utilizando a chave privada RSA antes do envio dos resultados à aplicação.
-- Geração de hashes determinístico com HMAC-SHA256, permitindo consultas mesmo em colunas criptografadas.
-- Integração nativa via HTTP com o HashiCorp Vault para geração, armazenamento e gerenciamento do par de chaves RSA.
-- Suporte à terminação de conexões utilizando TLS.
+A TCP proxy developed based on the Zero Trust Storage concept. The middleware intercepts, in real-time, the communication between the application and the database through the PgWire protocol, parses SQL queries, and automatically encrypts sensitive fields. This allows the application to continue functioning normally without requiring any source code changes.
 
-## Tecnologias
+### Objectives
 
-### Middleware TCP
+- Encrypt and decrypt sensitive data invisibly to the client application.
+- Enable searching on encrypted data.
+- Centralize the storage and management of cryptographic keys using a KMS, such as HashiCorp Vault.
 
-- **Linguagem:** Go 1.21
-- **Dependência Principal:** `pganalyze/pg_query_go v6`
+## Features
+
+- Implementation of hybrid envelope encryption, using AES-256-GCM to protect data and RSA-2048 to encrypt the data key - **Per-Row**
+- Implementation of a configurable mode via environment variable to use a static key aimed at maximum disk space efficiency - **Shared DEK**
+- Automatic decryption of data during `SELECT` query returns, using the RSA private key before sending results to the application.
+- Deterministic hash generation with HMAC-SHA256, allowing queries even on encrypted columns.
+- Native HTTP integration with HashiCorp Vault for the generation, storage, and management of the RSA key pair.
+- Support for connection termination using TLS.
+
+## Project Architecture
+
+Flowchart of the network and container layout in operation:
+
+```mermaid
+graph LR
+    subgraph "Application Layer"
+        APP[Node.js Application\nWebApp/API]
+    end
+
+    subgraph "Security Layer"
+        MW[Database Security\nMiddleware Proxy]
+        VAULT[(HashiCorp Vault\nKMS)]
+    end
+
+    subgraph "Persistence Layer"
+        DB[(PostgreSQL\nDatabase)]
+    end
+
+    APP -- "TLS v1.3 Tunnel\n" --> MW
+    MW -- "REST API / HTTPS\nKey Fetching" --> VAULT
+    MW -- "TLS v1.3 Tunnel\n" --> DB
+
+```
+
+## Encryption Modes
+
+You can adjust the encryption security level by changing the `MIDDLEWARE_ENCRYPTION_MODE` environment variable at proxy startup.
+
+**Per-row Mode**
+
+* Default mode with hybrid RSA+AES encryption.
+* Generates a DEK key for each database row, enveloping it with the RSA master key.
+* *Pros:* High level of security. If a DEK leaks, only one row is compromised.
+* *Cons:* Each data entry consumes about 600 characters in Hexadecimal.
+* **The database column must be of type `TEXT`**
+
+**Shared Mode**
+
+* Optimized mode, uses only AES-256-GCM.
+* Uses only a single symmetric key shared from Vault during boot.
+* *Pros:* Data entries take up about 78 characters.
+* *Cons:* A single key encrypts the entire database.
+
+## Technologies
+
+### TCP Middleware
+
+- **Language:** Go 1.21
+- **Main Dependency:** `pganalyze/pg_query_go v6`
 - **KMS:** HashiCorp Vault
-- **Armazenamento:** PostgreSQL 16
+- **Storage:** PostgreSQL 16
 
-### Ambiente de Demonstração
+### Test Environment
 
 - Node.js 18 LTS
 - Express.js 4
-- pg (node-postgres)
+- node-postgres
 - Vanilla Javascript + HTML/CSS
 
-## Instalação
+## Installation
 
-### 1. Clonando o repositório
+### Cloning the repository
 
 ```bash
 git clone https://github.com/Clara-M-Grossl/2026.1_DEC0013_DATABASE-SECURITY-MIDDLEWARE.git
 cd 2026.1_DEC0013_DATABASE-SECURITY-MIDDLEWARE
 ```
 
-### 2. Inicialização da infraestrutura
+After cloning the repository, you can choose to test the middleware in a test environment or run it standalone in your own application.
 
-A infraestrutura local foi configurada utilizando contêineres para realizar toda a orquestração dos serviços.
+### Test Environment
+
+For academic purposes, this repository includes a complete demonstration environment simulating a healthcare application and an e-commerce coupled to the proxy.
+
+Follow the simulation instructions at: 
+[demo/web/README.md](demo/web/README.md)
+
+---
+
+### In Your Own Project
+
+If you already have a PostgreSQL database and HashiCorp Vault in your infrastructure, you can initialize only the Middleware in an isolated manner.
+
+**1. Initializing the Middleware**
+Start the infrastructure and adjust the environment variables with your database IPs:
 
 ```bash
 docker-compose up -d --build
 ```
 
-Após a execução do comando, serão iniciados o  HashiCorp Vault , os nós do  PostgreSQL , os gateways de segurança e a aplicação web de testes, todos integrados à rede do Docker.
-
-## Uso
-
-### Explorando a Demonstração Visual
-
-Após a inicialização dos serviços, acesse a interface web em `http://localhost:3000`. A aplicação simula o sistema de uma clínica médica e demonstra como o proxy TCP protege informações sensíveis, como o CPF dos pacientes, criptografando esses dados antes de serem armazenados no banco de dados.
-
----
-
-### Utilizando o Middleware em Seu Projeto Próprio
-
-Se você já possui um banco PostgreSQL e um HashiCorp Vault na sua infraestrutura, você pode inicializar apenas o Gateway de forma isolada.
-
-**1. Rodando o Middleware**
-Compile a imagem ou baixe-a, e suba o contêiner mapeando os IPs do seu ambiente real:
+If you already have a complete infrastructure and want to run only the proxy container standalone via CLI:
 
 ```bash
 docker run -d \
   -p 8000:8000 \
-  -e GATEWAY_LISTEN_PORT=8000 \
-  -e GATEWAY_DB_HOST=<SEU_IP_POSTGRES> \
-  -e GATEWAY_DB_PORT=5432 \
-  -e VAULT_ADDR=http://<SEU_IP_VAULT>:8200 \
+  -e MIDDLEWARE_LISTEN_PORT=8000 \
+  -e MIDDLEWARE_DB_HOST=<YOUR_POSTGRES_IP> \
+  -e MIDDLEWARE_DB_PORT=5432 \
+  -e VAULT_ADDR=http://<YOUR_VAULT_IP>:8200 \
   -e VAULT_TOKEN=root \
+  -e MIDDLEWARE_ENCRYPTION_MODE=shared \
   -v ./certs:/certs \
-  security-gateway:latest
+  security-middleware:latest
 ```
+**Configuration Parameters:**
 
-**2. Redirecionando sua Conexão**
-Para utilizar o gateway, basta alterar a *connection string* da aplicação. Em vez de conectar o driver ou a ORM diretamente ao PostgreSQL (porta  **5432** ), a conexão deve ser direcionada para a porta do gateway ( **8000** ).
+- `MIDDLEWARE_LISTEN_PORT`: The port where the Proxy will listen for your application's connections.
+- `MIDDLEWARE_DB_HOST` and `PORT`: The actual IP and port where your physical PostgreSQL is running.
+- `VAULT_ADDR`: The full URL of your HashiCorp Vault infrastructure.
+- `VAULT_TOKEN`: The authentication token with permissions for cryptographic key management.
+- `MIDDLEWARE_ENCRYPTION_MODE`: Set as `shared` (single symmetric key) or `per_row` (a unique key per row).
+- `-v ./certs:/certs`: Mounting the local folder containing your TLS key pair.
 
-**3. Definindo as Colunas Protegidas**
-A definição das colunas que serão protegidas por criptografia AES ou HASH é realizada por meio de metadados armazenados no próprio banco de dados, sem exigir qualquer alteração no código da aplicação.
+**2. Redirecting your Connection**
+To use the gateway, simply change your application's connection string. Instead of connecting the driver or ORM directly to PostgreSQL, the connection should be directed to the gateway port.
+
+**3. Defining Protected Columns**
+The definition of the columns to be protected by AES or HASH encryption is done through metadata stored within the database itself, without requiring any changes to the application code.
+
+>[!NOTE]
+> The `blind_index=true` tag informs the proxy that it must generate the necessary hashes to allow partial searches on the encrypted column.
 
 ```sql
--- Criptografa o conteúdo dessa coluna
-COMMENT ON COLUMN usuarios.senha_ou_cpf IS 'gateway:encrypt';
+-- Encrypts the content of this column
+COMMENT ON COLUMN users.password_or_ssn IS 'middleware:encrypt';
 
--- Gera Blind Index
-COMMENT ON COLUMN usuarios.email IS 'gateway:blind_index';
+-- Generates Blind Index
+COMMENT ON COLUMN users.email IS 'middleware:blind_index';
 ```
 
-### Modos de Criptografia
+> [!NOTE]
+> **TLS Certificates Note:** The private key (`server.key`) contained in the `certs/` folder exists solely to enable the execution of this local test environment without extra configurations. In a production environment, real certificates and security keys should never be versioned in Git.
 
-Você pode ajustar o nível de segurança da criptografia alterando a variável de ambiente `MIDDLEWARE_ENCRYPTION_MODE` na inicialização do proxy.
-
-**Modo Per-row**
-
-* Modo padrão com criptografia híbrida RSA+AES
-* Gera uma chave DEK para cada linha do banco, envelopando-a com a chave mestre RSA
-* *Prós:* Alto nível de segurança. Caso uma DEK vaze, apenas uma linha é comprometida
-* *Contra:* Cada dado consome cerca de 600 caracteres em Hexadecimal
-* **A coluna no banco deve ser do tipo `TEXT`**
-
-**Modo Shared**
-
-* Modo otimizado, usa apenas AES-256-GCM.
-* Usa apenas uma única chame simétrica compartilhada do Vault durante o boot.
-* *Prós:* Os dados ficam com cerca de 78 caracteres.
-* *Contra:* Uma mesma chave criptograda todo o banco.
-
-## Arquitetura do Projeto
-
-Fluxograma da disposição de redes e containers em operação:
-
-```mermaid
-graph LR
-    subgraph "Camada de Aplicação"
-        APP[Aplicação Node.js\nWebApp/API]
-    end
-
-    subgraph "Camada de Segurança"
-        MW[Database Security\nMiddleware Proxy]
-        VAULT[(HashiCorp Vault\nKMS)]
-    end
-
-    subgraph "Camada de Persistência"
-        DB[(PostgreSQL\nDatabase)]
-    end
-
-    APP -- "TLS v1.3 Tunnel\n(Node.js pg module)" --> MW
-    MW -- "API REST / HTTPS\nBusca de Chaves" --> VAULT
-    MW -- "TLS v1.3 Tunnel\n" --> DB
-
-    style MW fill:#f9f,stroke:#333,stroke-width:2px
-    style VAULT fill:#ff9,stroke:#333,stroke-width:2px
-```
-
-## Estrutura do Projeto
+## Project Structure
 
 ```text
 2026.1_DEC0013_DATABASE-SECURITY-MIDDLEWARE/
+
+├── certs/
 ├── cmd/
-│   └── middleware/             # main.go e listener
-├── pkg/
-│   └── middleware/             # Funcionamento Interno
-├── demo/
-│   └── web/              # Serviço web de demonstração
+│   └── middleware/             # main.go and listener
 |
-└── docker-compose.yml
+├── demo/                       # Web demonstration service
+│   ├── web/       
+|   ├── docker-compose.yml          
+|   └── README
+├── docs/assets
+|
+├── pkg/
+│   └── middleware/             # Inner Workings
+|
+├── vault/
+|
+├── docker-compose.yml
+└── README
 ```
 
-## Licença
+## License
 
-Distribuído sob a licença MIT.
+Distributed under the MIT License.

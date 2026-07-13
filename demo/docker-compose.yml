@@ -1,0 +1,119 @@
+services:
+  database:
+    image: postgres:16
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: clara
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: clinica_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  vault:
+    image: hashicorp/vault:latest
+    container_name: dev-vault
+    command: server
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - ../vault/config:/vault/config
+      - vault_data:/vault/file
+
+  vault-init:
+    image: hashicorp/vault:latest
+    container_name: vault-init
+    depends_on:
+      - vault
+    environment:
+      - VAULT_ADDR=http://vault:8200
+    volumes:
+      - ../vault/config:/vault/config
+      - vault_data:/vault/file
+    entrypoint: /bin/sh
+    command: -c "sh /vault/config/init-vault.sh"
+
+  ecommerce_db:
+    image: postgres:16
+    container_name: ecommerce_db
+    environment:
+      POSTGRES_USER: clara
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ecommerce_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - ecommerce_data:/var/lib/postgresql/data
+
+  middleware:
+    build:
+      context: ../
+      dockerfile: cmd/middleware/Dockerfile
+    container_name: security_middleware
+    ports:
+      - "8000:8000"
+    environment:
+      - MIDDLEWARE_LISTEN_PORT=8000
+      - MIDDLEWARE_DB_HOST=postgres_db
+      - MIDDLEWARE_DB_PORT=5432
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root
+      - MIDDLEWARE_ENCRYPTION_MODE=shared
+    depends_on:
+      - database
+      - ecommerce_db
+      - vault
+      - vault-init
+    volumes:
+      - ../certs:/certs
+
+  middleware_ecommerce:
+    build:
+      context: ../
+      dockerfile: cmd/middleware/Dockerfile
+    container_name: security_middleware_ecommerce
+    ports:
+      - "8001:8000"
+    environment:
+      - MIDDLEWARE_LISTEN_PORT=8000
+      - MIDDLEWARE_DB_HOST=ecommerce_db
+      - MIDDLEWARE_DB_PORT=5432
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root
+      - MIDDLEWARE_ENCRYPTION_MODE=per_row
+    depends_on:
+      - ecommerce_db
+      - vault
+      - vault-init
+    volumes:
+      - ../certs:/certs
+
+  webapp:
+    build:
+      context: web/backend
+      dockerfile: Dockerfile
+    container_name: clinica_webapp
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=middleware
+      - DB_PORT=8000
+      - DB_USER=clara
+      - DB_PASS=password
+      - DB_NAME=clinica_db
+      - DB_ECOMMERCE_HOST=middleware_ecommerce
+      - DB_ECOMMERCE_PORT=8000
+      - DB_ECOMMERCE_NAME=ecommerce_db
+    depends_on:
+      - middleware
+      - middleware_ecommerce
+    volumes:
+      - web/frontend:/frontend
+
+volumes:
+  postgres_data:
+  ecommerce_data:
+  vault_data:

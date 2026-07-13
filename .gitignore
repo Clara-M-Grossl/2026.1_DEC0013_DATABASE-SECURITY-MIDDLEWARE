@@ -1,4 +1,4 @@
-# Binários e Executáveis
+
 gateway
 *.exe
 *.exe~
@@ -6,24 +6,24 @@ gateway
 *.so
 *.dylib
 
-# Workspace Go
+
 *.test
 *.out
 coverage.txt
 /vendor/
 
-# Node.js
+
 node_modules/
 npm-debug.log
 yarn-error.log
 .DS_Store
 
-# Variáveis de Ambiente e Configurações Locais
+
 .env
 .env.local
 .env.*.local
 
-# Banco de Dados e Volumes Locais (Ignorar sempre)
+
 vault/data/
 vault/config/init.json
 *.pcapng
