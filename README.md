@@ -3,28 +3,22 @@
 <div align="center">
   <h1>Database Security Middleware</h1>
   <h2>TCP Interception and Network Encryption System for PostgreSQL Databases</h2>
-<div align="center">
+  <br>
   <img src="https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Golang"/>
   <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL"/>
   <img src="https://img.shields.io/badge/Vault-000000?style=for-the-badge&logo=vault&logoColor=white" alt="HashiCorp Vault"/>
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"/>
+  <br><br>
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" />
+  <img src="https://img.shields.io/badge/semestre-2026.1-purple.svg" alt="Semester" />
+  <img src="https://img.shields.io/badge/disciplina-DEC0013-orange.svg" alt="Subject" />
 </div>
-<br>
-
----
-
-<p>
-    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" />
-    <img src="https://img.shields.io/badge/semestre-2026.1-purple.svg" alt="Semester" />
-    <img src="https://img.shields.io/badge/disciplina-DEC0013-orange.svg" alt="Subject" />
-  </p>
 
 ---
 
 [Versão em Português](READMEPT.md) 
 
 ---
-
 
 ## About the Project
 
@@ -177,7 +171,7 @@ COMMENT ON COLUMN users.email IS 'middleware:blind_index';
 ```
 
 > [!NOTE]
-> **TLS Certificates Note:** The private key (`server.key`) contained in the `certs/` folder exists solely to enable the execution of this local test environment without extra configurations. In a production environment, real certificates and security keys should never be versioned in Git.
+> **TLS Certificates Note:** The private key contained in the `certs/` folder exists solely to enable the execution of this local test environment without extra configurations. In a production environment, real certificates and security keys should never be versioned in Git.
 
 ## Project Structure
 
